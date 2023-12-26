@@ -41,7 +41,7 @@ class Hotel:
 
         #visit booking.com
         self.browser.get('https://www.booking.com')
-        delay = 1
+        delay = 3
         try:
             checkElem = WebDriverWait(self.browser, delay).until(EC.presence_of_element_located((By.CSS_SELECTOR, "button[aria-label='Giriş bilgisini kapat.']")))
             print ("Pop up closed")
@@ -70,7 +70,8 @@ class Hotel:
         #login with facebook
         try:
             checkElem = WebDriverWait(self.browser, delay).until(EC.presence_of_element_located((By.CSS_SELECTOR, "a[data-provider-name='facebook']")))
-            self.browser.find_element(By.CSS_SELECTOR, "a[data-provider-name='facebook']").click()
+            checkElem.click()
+            # self.browser.find_element(By.CSS_SELECTOR, "a[data-provider-name='facebook']").click()
             print ("Loaded facebook login page")
         except TimeoutException:
             print ("Login facebook error")
@@ -80,8 +81,11 @@ class Hotel:
         self.browser.switch_to.window(self.browser.window_handles[1])
 
         #input username-password
-        self.browser.find_element(By.ID, 'email').send_keys(username)
-        self.browser.find_element(By.ID, 'pass').send_keys(password)
+        try:
+            self.browser.find_element(By.ID, 'email').send_keys(username)
+            self.browser.find_element(By.ID, 'pass').send_keys(password)
+        except:
+            print("Username and pass error")
 
         #push login facebook
         try:
@@ -95,6 +99,7 @@ class Hotel:
     
 
     def search(self, search_key: str, search_date: str, search_type: str = "default"):
+        self.browser.find_element(By.XPATH, "//body").click()
         #take city name as a search input
         self.browser.find_element(By.CSS_SELECTOR, ".eb46370fe1").send_keys((Keys.CONTROL , "A"))
         time.sleep(3)
@@ -188,6 +193,29 @@ class Hotel:
             except:
                 self.ratio_count.append("None")
 
+
+    def change_currency(self):
+        try:
+            currency_list_btn = self.browser.find_element(By.CSS_SELECTOR, "button[data-testid='header-currency-picker-trigger']")
+            currency_list_btn.click()
+        except NoSuchElementException as e:
+            print("Change currency button can't find")
+        
+        try:
+            currency_btn = self.browser.find_elements(By.CSS_SELECTOR, "div[class=' ea1163d21f']")
+            for i in currency_btn:
+                if i.text == "EUR":
+                    i.click()
+                    break
+        except:
+            print("Euro cant selected")
+
+
+
+    def export_to_excel(self, path, city):
+        df = pd.DataFrame({"Otel ismi":self.hotel_names, "Ücret":self.prices, "Ek Ücretler":self.extra_prices, "Puan":self.ratio, "Değerlendirme Sayısı": self.ratio_count})
+        df.to_excel(f'{path}/otel_veri_{city}.xlsx')
+        print("Excel file created")
             
             #self.hotel_names.append(page[i].find("div", {"class": "f6431b446c a15b38c233"}).text)         
             #self.prices.append(unicodedata.normalize("NFKD", page[i].find("span", {"class": "f6431b446c fbfd7c1165 e84eb96b1f"}).text))

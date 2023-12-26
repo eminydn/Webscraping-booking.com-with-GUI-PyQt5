@@ -9,7 +9,7 @@ from PyQt5.QtCore import QDate, QTime, QDateTime, Qt
 import pandas as pd
 
 from app_GUI import Ui_MainWindow
-from hotel_application2 import Hotel
+from hotel_application_v2 import Hotel
 
 
 class Window(QtWidgets.QMainWindow):
@@ -27,8 +27,11 @@ class Window(QtWidgets.QMainWindow):
         self.setWindowTitle("Booking.com WebScraper")
         self.ui.txtPath.setText(self.currentPath)
 
-        self.ui.txtUsername.setText("Facebook kullanıcı adı")
-        self.ui.txtPass.setText("Şifre")
+        # self.ui.txtUsername.setText("Facebook kullanıcı adı")
+        # self.ui.txtPass.setText("Şifre")
+
+        self.ui.txtUsername.setText("mehmetemin2861")
+        self.ui.txtPass.setText("M.emin3454!")
 
         self.ui.dateIn.setDate(QDate.currentDate().addDays(30))
         self.ui.dateOut.setDate(QDate.currentDate().addDays(31))
@@ -54,29 +57,32 @@ class Window(QtWidgets.QMainWindow):
         self.app = Hotel()
         self.app.sign_in_facebook(email, password)
         time.sleep(15)
-        self.app.search(search_key = self.ui.txtCity.text(), search_date = self.setSearchDate())
-        self.export_to_excel()
+        self.app.change_currency()
+        # self.app.search(search_key = self.ui.txtCity.text(), search_date = self.setSearchDate())
+        # self.app.export_to_excel(self.ui.txtPath.text(), self.ui.txtCity.text())
 
 
     def setPath(self):
-        file = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
-        self.ui.txtPath.setText(file)
-    
+        try:
+            file = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
+            self.ui.txtPath.setText(file)
+        except:
+            print("Path can't be changed")
 
     def setSearchDate(self):
         locale.setlocale(locale.LC_ALL, '')
         qt_date = self.ui.dateIn.date().toPyDate()
-        gun, ay, yil = qt_date.strftime("%d"), qt_date.strftime("%B"), qt_date.strftime("%Y")
-        search_key = f"{str(int(gun))} {ay} {yil}"
+        day, month, year = qt_date.strftime("%d"), qt_date.strftime("%B"), qt_date.strftime("%Y")
+        search_key = f"{str(int(day))} {month} {year}"
         return search_key
     
 
-    def export_to_excel(self):
-        df = pd.DataFrame({"Otel ismi":self.app.hotel_names, "Ücret":self.app.prices, "Ek Ücretler":self.app.extra_prices, "Puan":self.app.ratio, "Değerlendirme Sayısı": self.app.ratio_count})
-        df.to_excel(f'{self.ui.txtPath.text()}/otel_veri_{self.ui.txtCity.text()}.xlsx')
-        print("DONE")
+        
 
-
+    # def export_to_excel(self):
+    #     df = pd.DataFrame({"Otel ismi":self.app.hotel_names, "Ücret":self.app.prices, "Ek Ücretler":self.app.extra_prices, "Puan":self.app.ratio, "Değerlendirme Sayısı": self.app.ratio_count})
+    #     df.to_excel(f'{self.ui.txtPath.text()}/otel_veri_{self.ui.txtCity.text()}.xlsx')
+    #     print("DONE")
 
 
 def app():
