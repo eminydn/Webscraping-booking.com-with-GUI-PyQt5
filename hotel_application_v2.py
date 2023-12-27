@@ -27,6 +27,8 @@ class Hotel:
         self.options.add_experimental_option("detach", True)
         self.browser = webdriver.Chrome(options=self.options, service=ChromeService(ChromeDriverManager().install()))
 
+        self.delay = 3
+
         self.hotel_names = []
         self.prices = []
         self.extra_prices = []
@@ -35,13 +37,14 @@ class Hotel:
 
 
 
+    #methods
     def sign_in_facebook(self, email, password):
         username = email
         password = password
 
         #visit booking.com
         self.browser.get('https://www.booking.com')
-        delay = 3
+        delay = self.delay
         try:
             checkElem = WebDriverWait(self.browser, delay).until(EC.presence_of_element_located((By.CSS_SELECTOR, "button[aria-label='Giriş bilgisini kapat.']")))
             print ("Pop up closed")
@@ -66,7 +69,6 @@ class Hotel:
         except TimeoutException:
             print ("Login page error")
 
-        
         #login with facebook
         try:
             checkElem = WebDriverWait(self.browser, delay).until(EC.presence_of_element_located((By.CSS_SELECTOR, "a[data-provider-name='facebook']")))
@@ -76,7 +78,6 @@ class Hotel:
         except TimeoutException:
             print ("Login facebook error")
         
-
         #switch to facebook login window
         self.browser.switch_to.window(self.browser.window_handles[1])
 
@@ -96,7 +97,37 @@ class Hotel:
         
         #switch to main window
         self.browser.switch_to.window(self.browser.window_handles[0])
+
+        #wait to load page
+        time.sleep(10)
+        WebDriverWait(self.browser, delay).until(EC.presence_of_element_located((By.CSS_SELECTOR, "button[data-testid='occupancy-config']")))
     
+
+
+    def set_room_type(self, adult, child, room):
+        delay = self.delay
+        try:
+            checkElem = WebDriverWait(self.browser, delay).until(EC.presence_of_element_located((By.CSS_SELECTOR, "button[data-testid='occupancy-config']")))
+            checkElem.click()
+            
+            plus_buttons = self.browser.find_elements(By.CSS_SELECTOR, "button[class='a83ed08757 c21c56c305 f38b6daa18 d691166b09 ab98298258 deab83296e bb803d8689 f4d78af12a']")
+
+            if adult < 2:
+                self.browser.find_element(By.CSS_SELECTOR, "button[class='a83ed08757 c21c56c305 f38b6daa18 d691166b09 ab98298258 deab83296e bb803d8689 e91c91fa93']").click()
+            elif adult > 2:
+                for i in range(0, adult - 2):
+                    plus_buttons[0].click()
+
+            for i in range(0, 0):
+                plus_buttons[1].click()
+
+            for i in range(0, room - 1):
+                plus_buttons[2].click()
+
+        except:
+            print("Room properties cant be changed")
+        
+
 
     def search(self, search_key: str, search_date: str, search_type: str = "default"):
         self.browser.find_element(By.XPATH, "//body").click()
@@ -113,22 +144,23 @@ class Hotel:
 
         #click date area
         self.browser.find_element(By.CSS_SELECTOR, ".f73e6603bf").click()
-        time.sleep(3)
+        time.sleep(2)
 
         #choose date
         self.browser.find_element(By.CSS_SELECTOR, f"span[aria-label='{search_date}']").click()
-        time.sleep(3)
+        time.sleep(2)
         
         #click search button
         self.browser.find_element(By.CSS_SELECTOR, "button.a83ed08757.c21c56c305.a4c1805887.f671049264.d2529514af.c082d89982.cceeb8986b").click()
 
         time.sleep(3)
-        #get_source and parse_source function loop by choise
+        #get_source and parse_source function loop by choises
         src = self.get_source()
         self.parse_source(src)
 
         if search_type == "default":
-            default_value = 3
+            #default value that how many times pass next page
+            default_value = 5
             counter = 0
             while counter < default_value:
                 next_button = self.browser.find_element(By.CSS_SELECTOR, "button[aria-label='Sonraki sayfa']")
@@ -159,12 +191,16 @@ class Hotel:
                 else:
                     break
 
+
+
     def get_source(self):
         #handle sourch code data with beautifulsoup 
         result = self.browser.page_source
         soup = BeautifulSoup(result, 'html.parser')
         page =  list(soup.findAll('div', {"class": "c82435a4b8 a178069f51 a6ae3c2b40 a18aeea94d d794b7a0f7 f53e278e95 c6710787a4"}))
         return page
+    
+
 
     def parse_source(self, page):
         for i in range(0, len(page)):
@@ -194,6 +230,7 @@ class Hotel:
                 self.ratio_count.append("None")
 
 
+
     def change_currency(self):
         try:
             currency_list_btn = self.browser.find_element(By.CSS_SELECTOR, "button[data-testid='header-currency-picker-trigger']")
@@ -209,11 +246,16 @@ class Hotel:
                     break
         except:
             print("Euro cant selected")
+        
+        time.sleep(5)
+        WebDriverWait(self.browser, self.delay).until(EC.presence_of_element_located((By.CSS_SELECTOR, "button[data-testid='occupancy-config']")))
 
 
 
-    def export_to_excel(self, path, city):
-        df = pd.DataFrame({"Otel ismi":self.hotel_names, "Ücret":self.prices, "Ek Ücretler":self.extra_prices, "Puan":self.ratio, "Değerlendirme Sayısı": self.ratio_count})
+    def export_to_excel(self, path, city, room_selection: list, check_in_out: list):
+        df = pd.DataFrame({"Otel ismi":self.hotel_names, "Ücret":self.prices, "Ek Ücretler":self.extra_prices, "Puan":self.ratio, "Değerlendirme Sayısı": self.ratio_count,
+                           "Yetişkin": [room_selection[0]]*len(self.prices), "Çocuk": [room_selection[1]]*len(self.prices), "Oda": [room_selection[2]]*len(self.prices),
+                           "Giriş Tarihi": [check_in_out[0]]*len(self.prices), "Çıkış Tarihi": [check_in_out[1]]*len(self.prices)})
         df.to_excel(f'{path}/otel_veri_{city}.xlsx')
         print("Excel file created")
             
@@ -223,10 +265,3 @@ class Hotel:
             #self.ratio.append(unicodedata.normalize("NFKD", page[i].find("div", {"class": "a3b8729ab1 d86cee9b25"}).text))
             #self.ratio_count.append(unicodedata.normalize("NFKD", page[i].find("div", {"class": "abf093bdfe f45d8e4c32 d935416c47"}).text))
 
-
-# otel = Hotel(email, password)
-# otel.sign_in_facebook()
-# otel.export_to_excel()
-
-# print(otel.hotel_names)
-# print(otel.extra_prices)

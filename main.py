@@ -26,12 +26,14 @@ class Window(QtWidgets.QMainWindow):
         #set Properties
         self.setWindowTitle("Booking.com WebScraper")
         self.ui.txtPath.setText(self.currentPath)
+        self.ui.spnRoom.setMinimum(1)
+        self.ui.spnAdult.setMinimum(1)
 
         # self.ui.txtUsername.setText("Facebook kullanıcı adı")
         # self.ui.txtPass.setText("Şifre")
 
-        self.ui.txtUsername.setText("mehmetemin2861")
-        self.ui.txtPass.setText("M.emin3454!")
+        self.ui.txtUsername.setText("Kullanıcı adı")
+        self.ui.txtPass.setText("Şifre")
 
         self.ui.dateIn.setDate(QDate.currentDate().addDays(30))
         self.ui.dateOut.setDate(QDate.currentDate().addDays(31))
@@ -45,7 +47,7 @@ class Window(QtWidgets.QMainWindow):
     def trial(self):
         locale.setlocale(locale.LC_ALL, '')
         result = self.ui.dateIn.date().toPyDate()
-        gun, ay, yil = result.strftime("%d"), result.strftime("%B"), result.strftime("%Y")
+        gun, ay, yil = result.strftime( "%d"), result.strftime("%B"), result.strftime("%Y")
         search_key = f"{str(int(gun))} {ay} {yil}"
         print(search_key)
 
@@ -54,12 +56,24 @@ class Window(QtWidgets.QMainWindow):
         email = self.ui.txtUsername.text()
         password = self.ui.txtPass.text()
 
+        adult = self.ui.spnAdult.value()
+        children = self.ui.spnChildren.value()
+        room = self.ui.spnRoom.value()
+
         self.app = Hotel()
         self.app.sign_in_facebook(email, password)
-        time.sleep(15)
         self.app.change_currency()
-        # self.app.search(search_key = self.ui.txtCity.text(), search_date = self.setSearchDate())
-        # self.app.export_to_excel(self.ui.txtPath.text(), self.ui.txtCity.text())
+
+        if adult != 2 or children != 0 or room != 1:
+            self.app.set_room_type(adult, children, room)
+
+        self.app.search(search_key = self.ui.txtCity.text(), search_date = self.setSearchDate())
+
+        excel_dateIn = self.ui.dateIn.date().toPyDate().strftime("%d-%m-%Y")
+        excel_dateOut = self.ui.dateOut.date().toPyDate().strftime("%d-%m-%Y")
+
+        self.app.export_to_excel(self.ui.txtPath.text(), self.ui.txtCity.text(), room_selection=[adult,children,room], check_in_out=[excel_dateIn, excel_dateOut])
+        self.app.browser.close()
 
 
     def setPath(self):
@@ -69,6 +83,7 @@ class Window(QtWidgets.QMainWindow):
         except:
             print("Path can't be changed")
 
+
     def setSearchDate(self):
         locale.setlocale(locale.LC_ALL, '')
         qt_date = self.ui.dateIn.date().toPyDate()
@@ -76,14 +91,6 @@ class Window(QtWidgets.QMainWindow):
         search_key = f"{str(int(day))} {month} {year}"
         return search_key
     
-
-        
-
-    # def export_to_excel(self):
-    #     df = pd.DataFrame({"Otel ismi":self.app.hotel_names, "Ücret":self.app.prices, "Ek Ücretler":self.app.extra_prices, "Puan":self.app.ratio, "Değerlendirme Sayısı": self.app.ratio_count})
-    #     df.to_excel(f'{self.ui.txtPath.text()}/otel_veri_{self.ui.txtCity.text()}.xlsx')
-    #     print("DONE")
-
 
 def app():
     app = QtWidgets.QApplication(sys.argv)
