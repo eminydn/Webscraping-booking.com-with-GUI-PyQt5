@@ -94,6 +94,17 @@ class Hotel:
             print ("Login successfully")
         except TimeoutException:
             print ("Login error")
+
+        time.sleep(2)
+        opened_window = len(self.browser.window_handles)
+
+        if opened_window > 1:
+            self.browser.switch_to.window(self.browser.window_handles[1])
+            try:
+                button = self.browser.find_element(By.XPATH, "/html/body/div[1]/div/div/div/div/div/div/div[1]/div[3]/div/div/div/div/div/div/div[2]/div/div/div[1]/div/div/div/div[1]/div/div/div/div/div")
+                button.click()
+            except:
+                print("Login error 2")
         
         #switch to main window
         self.browser.switch_to.window(self.browser.window_handles[0])
